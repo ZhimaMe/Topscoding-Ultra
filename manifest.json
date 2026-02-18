@@ -1,0 +1,27 @@
+{
+	"manifest_version": 3,
+	"name": "Topscoding Ultra",
+	"version": "1.2.0", 
+	"content_scripts": [
+		{
+			"matches": ["https://*.topscoding.com/*"],
+			"js": ["src/lib/marked.min.js","src/lib/jquery.min.js","src/content/index.js"]
+		}
+	],
+	"action": {
+		"default_popup": "src/popup/popup.html",
+		"default_icon": "assets/icons/topscoding.png",
+		"default_title": "Topscoding Ultra"
+	},
+	"icons": {
+		"16": "assets/icons/topscoding.png",
+		"32": "assets/icons/topscoding.png",
+		"48": "assets/icons/topscoding.png",
+		"128": "assets/icons/topscoding.png"
+	},
+	"homepage_url": "https://github.com/ZhimaMe/Topscoding-Ultra",
+	"permissions": [
+		"storage",
+		"tabs"
+	]
+}
