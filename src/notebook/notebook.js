@@ -2,6 +2,8 @@ class NoteManager {
 	constructor() {
 		this.notes = [];
 		this.currentNoteId = null;
+		this.isMultiSelectMode = false;
+		this.selectedNoteIds = new Set();
 		this.init();
 	}
 
@@ -61,19 +63,36 @@ class NoteManager {
 	}
 
 	bindEvents() {
-		// 保存按钮
-		document.getElementById('submit').addEventListener('click', () => {
-			this.saveCurrentNote();
-		});
-
 		// 新建笔记按钮
 		document.querySelector('.add-note-btn').addEventListener('click', () => {
 			this.createNewNote();
 		});
 
+		// 多选按钮
+		document.querySelector('.multi-select-btn').addEventListener('click', () => {
+			this.toggleMultiSelectMode();
+		});
+
+		// 批量删除按钮
+		document.getElementById('batch-delete-btn').addEventListener('click', () => {
+			this.batchDeleteNotes();
+		});
+
+		// 取消多选按钮
+		document.getElementById('cancel-select-btn').addEventListener('click', () => {
+			this.exitMultiSelectMode();
+		});
+
 		// 标题输入事件
 		document.getElementById('note-title').addEventListener('input', () => {
 			this.saveCurrentNote();
+		});
+
+		// 双击标题复制笔记
+		document.getElementById('note-title').addEventListener('dblclick', () => {
+			if (this.currentNoteId) {
+				this.copyNoteToClipboard(this.currentNoteId);
+			}
 		});
 
 		// 内容输入事件
@@ -197,17 +216,45 @@ class NoteManager {
 
 		this.notes.forEach(note => {
 			const noteItem = document.createElement('div');
-			noteItem.className = `note-item ${this.currentNoteId === note.id ? 'active' : ''}`;
-			noteItem.innerHTML = `
-				<div class="delete-btn" data-id="${note.id}">×</div>
-				<div class="note-title">${note.title}</div>
-				<div class="note-preview">${note.content.substring(0, 50)}${note.content.length > 50 ? '...' : ''}</div>
-			`;
+			const isSelected = this.selectedNoteIds.has(note.id);
+			
+			noteItem.className = `note-item ${this.currentNoteId === note.id ? 'active' : ''} ${isSelected ? 'selected' : ''}`;
+			noteItem.dataset.id = note.id;
+			
+			// 根据是否为多选模式生成不同的HTML
+			if (this.isMultiSelectMode) {
+				noteItem.innerHTML = `
+					<div class="note-title">${note.title}</div>
+					<div class="note-preview">${note.content.substring(0, 50)}${note.content.length > 50 ? '...' : ''}</div>
+				`;
+			} else {
+				noteItem.innerHTML = `
+					<div class="delete-btn" data-id="${note.id}" style="float: right;">×</div>
+					<div class="note-title">${note.title}</div>
+					<div class="note-preview">${note.content.substring(0, 50)}${note.content.length > 50 ? '...' : ''}</div>
+				`;
+			}
+			
 			noteItem.addEventListener('click', (e) => {
 				if (!e.target.classList.contains('delete-btn')) {
-					this.selectNote(note.id);
+					if (this.isMultiSelectMode) {
+						// 在多选模式下，点击笔记项的任何位置（除了删除按钮）都可以切换选择状态
+						this.toggleNoteSelection(note.id);
+					} else {
+						// 非多选模式下，点击笔记项选择笔记
+						this.selectNote(note.id);
+					}
 				}
 			});
+			
+			// 绑定双击整个笔记选项卡复制笔记内容到剪贴板的事件
+			noteItem.addEventListener('dblclick', (e) => {
+				if (!this.isMultiSelectMode && !e.target.classList.contains('delete-btn')) {
+					e.stopPropagation();
+					this.copyNoteToClipboard(note.id);
+				}
+			});
+			
 			noteListEl.appendChild(noteItem);
 		});
 
@@ -218,6 +265,181 @@ class NoteManager {
 				this.deleteNote(btn.dataset.id);
 			});
 		});
+
+		// 绑定复选框事件
+		if (this.isMultiSelectMode) {
+			document.querySelectorAll('.checkbox input[type="checkbox"]').forEach(checkbox => {
+				checkbox.addEventListener('change', (e) => {
+					e.stopPropagation();
+					this.toggleNoteSelection(checkbox.dataset.id);
+				});
+			});
+		}
+	}
+
+	toggleMultiSelectMode() {
+		if (this.isMultiSelectMode) {
+			// 退出多选模式
+			this.exitMultiSelectMode();
+		} else {
+			// 进入多选模式
+			this.isMultiSelectMode = true;
+			this.selectedNoteIds.clear();
+			document.querySelector('.multi-select-btn').textContent = '取消';
+			this.showBatchActionsInEditor();
+		}
+		
+		this.updateSelectedCount();
+		this.renderNoteList();
+	}
+
+	exitMultiSelectMode() {
+		this.isMultiSelectMode = false;
+		this.selectedNoteIds.clear();
+		document.querySelector('.multi-select-btn').textContent = '多选';
+		this.hideBatchActionsInEditor();
+		this.updateSelectedCount();
+		this.renderNoteList();
+	}
+
+	showBatchActionsInEditor() {
+		// 隐藏笔记编辑器，显示批量操作界面
+		const editorEl = document.getElementById('note-editor');
+		const emptyStateEl = document.getElementById('empty-state');
+		
+		// 保存原始内容
+		this.originalEditorContent = editorEl.innerHTML;
+		
+		// 替换为批量操作界面
+			editorEl.innerHTML = `
+				<div style="display: flex; flex-direction: column; gap: 20px; height: 100%; justify-content: center; align-items: center;">
+					<h2>多选模式</h2>
+					<p style="color: #666; text-align: center;">点击左侧笔记选项卡进行选择</p>
+					<div style="display: flex; gap: 12px; margin: 20px 0;">
+						<span id="selected-count" style="font-size: 16px; color: #333; font-weight: bold;">已选择 0 项</span>
+					</div>
+					<div style="display: flex; gap: 12px;">
+						<button id="batch-delete-btn" style="padding: 10px 24px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">删除选中</button>
+					</div>
+				</div>
+			`;
+			
+			// 绑定按钮事件
+			document.getElementById('batch-delete-btn').addEventListener('click', () => {
+				this.batchDeleteNotes();
+			});
+	}
+
+	hideBatchActionsInEditor() {
+		// 恢复笔记编辑器
+		const editorEl = document.getElementById('note-editor');
+		if (this.originalEditorContent) {
+			editorEl.innerHTML = this.originalEditorContent;
+			this.originalEditorContent = null;
+			
+			// 重新绑定事件
+			document.getElementById('note-title').addEventListener('input', () => {
+				this.saveCurrentNote();
+			});
+			
+			document.getElementById('note-title').addEventListener('dblclick', () => {
+				if (this.currentNoteId) {
+					this.copyNoteToClipboard(this.currentNoteId);
+				}
+			});
+			
+			document.getElementById('note').addEventListener('input', () => {
+				this.saveCurrentNote();
+			});
+		}
+	}
+
+	toggleNoteSelection(noteId) {
+		if (this.selectedNoteIds.has(noteId)) {
+			this.selectedNoteIds.delete(noteId);
+		} else {
+			this.selectedNoteIds.add(noteId);
+		}
+		this.updateSelectedCount();
+		this.renderNoteList();
+	}
+
+	updateSelectedCount() {
+		const count = this.selectedNoteIds.size;
+		const selectedCountEl = document.getElementById('selected-count');
+		if (selectedCountEl) {
+			selectedCountEl.textContent = `已选择 ${count} 项`;
+		}
+	}
+
+	batchDeleteNotes() {
+		if (this.selectedNoteIds.size === 0) return;
+
+		if (confirm(`确定要删除选中的 ${this.selectedNoteIds.size} 条笔记吗？`)) {
+			// 过滤掉选中的笔记
+			this.notes = this.notes.filter(note => !this.selectedNoteIds.has(note.id));
+			
+			// 更新当前选中的笔记
+			if (this.selectedNoteIds.has(this.currentNoteId)) {
+				this.currentNoteId = this.notes.length > 0 ? this.notes[0].id : null;
+			}
+			
+			this.selectedNoteIds.clear();
+			this.saveNotes();
+			this.updateSelectedCount();
+			this.renderNoteList();
+			
+			// 退出多选模式，恢复笔记编辑器
+			this.exitMultiSelectMode();
+			
+			this.updateEditorVisibility();
+			this.loadCurrentNote();
+		}
+	}
+
+	copyNoteToClipboard(noteId) {
+		const note = this.notes.find(note => note.id === noteId);
+		if (!note) return;
+
+		// 构建要复制的内容，包含标题和内容
+		const noteContent = `${note.title}\n\n${note.content}`;
+
+		// 使用Clipboard API复制内容
+		navigator.clipboard.writeText(noteContent)
+			.then(() => {
+				// 显示复制成功的提示
+				this.showCopySuccess(note.title);
+			})
+			.catch(err => {
+				console.error('无法复制内容: ', err);
+			});
+	}
+
+	showCopySuccess(noteTitle) {
+		// 创建提示元素
+		const toast = document.createElement('div');
+		toast.style.position = 'fixed';
+		toast.style.top = '20px';
+		toast.style.right = '20px';
+		toast.style.padding = '12px 20px';
+		toast.style.backgroundColor = '#4CAF50';
+		toast.style.color = 'white';
+		toast.style.borderRadius = '4px';
+		toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+		toast.style.zIndex = '1000';
+		toast.style.transition = 'opacity 0.3s ease';
+		toast.textContent = `笔记 "${noteTitle}" 已复制到剪贴板`;
+
+		// 添加到页面
+		document.body.appendChild(toast);
+
+		// 3秒后移除
+		setTimeout(() => {
+			toast.style.opacity = '0';
+			setTimeout(() => {
+				document.body.removeChild(toast);
+			}, 300);
+		}, 3000);
 	}
 }
 
