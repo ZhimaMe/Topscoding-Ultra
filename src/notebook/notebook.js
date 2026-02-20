@@ -59,7 +59,13 @@ class NoteManager {
 	}
 
 	saveNotes() {
-		chrome.storage.sync.set({ 'notes': this.notes });
+		chrome.storage.sync.set({ 'notes': this.notes }, () => {
+			if (chrome.runtime.lastError) {
+				console.error('保存笔记失败:', chrome.runtime.lastError);
+			} else {
+				console.log('笔记保存成功:', this.notes.length, '条笔记');
+			}
+		});
 	}
 
 	bindEvents() {
@@ -348,7 +354,11 @@ class NoteManager {
 				this.saveCurrentNote();
 			});
 			
-			document.getElementById('note-title').addEventListener('dblclick', () => {
+			document.getElementById('note-title').addEventListener('dblclick', (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				// 防止文本被选中
+				window.getSelection().removeAllRanges();
 				if (this.currentNoteId) {
 					this.copyNoteToClipboard(this.currentNoteId);
 				}
