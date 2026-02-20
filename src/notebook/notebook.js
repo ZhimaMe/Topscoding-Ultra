@@ -407,8 +407,15 @@ class NoteManager {
 		const note = this.notes.find(note => note.id === noteId);
 		if (!note) return;
 
-		// 构建要复制的内容，如果内容为空则只复制空字符串
-		const noteContent = note.content ? `${note.title}\n\n${note.content}` : '';
+		// 检查笔记内容是否为空
+		if (!note.content || note.content.trim() === '') {
+			// 显示复制失败的提示
+			this.showCopyFailure();
+			return;
+		}
+
+		// 构建要复制的内容，包含标题和内容
+		const noteContent = `${note.title}\n\n${note.content}`;
 
 		// 使用Clipboard API复制内容
 		navigator.clipboard.writeText(noteContent)
@@ -418,6 +425,8 @@ class NoteManager {
 			})
 			.catch(err => {
 				console.error('无法复制内容: ', err);
+				// 显示复制失败的提示
+				this.showCopyFailure();
 			});
 	}
 
@@ -435,6 +444,33 @@ class NoteManager {
 		toast.style.zIndex = '1000';
 		toast.style.transition = 'opacity 0.3s ease';
 		toast.textContent = `笔记 "${noteTitle}" 已复制到剪贴板`;
+
+		// 添加到页面
+		document.body.appendChild(toast);
+
+		// 3秒后移除
+		setTimeout(() => {
+			toast.style.opacity = '0';
+			setTimeout(() => {
+				document.body.removeChild(toast);
+			}, 300);
+		}, 3000);
+	}
+
+	showCopyFailure() {
+		// 创建提示元素
+		const toast = document.createElement('div');
+		toast.style.position = 'fixed';
+		toast.style.top = '20px';
+		toast.style.right = '20px';
+		toast.style.padding = '12px 20px';
+		toast.style.backgroundColor = '#f44336';
+		toast.style.color = 'white';
+		toast.style.borderRadius = '4px';
+		toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+		toast.style.zIndex = '1000';
+		toast.style.transition = 'opacity 0.3s ease';
+		toast.textContent = '复制失败：笔记内容为空';
 
 		// 添加到页面
 		document.body.appendChild(toast);
