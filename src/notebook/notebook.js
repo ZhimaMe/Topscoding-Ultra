@@ -89,7 +89,11 @@ class NoteManager {
 		});
 
 		// 双击标题复制笔记
-		document.getElementById('note-title').addEventListener('dblclick', () => {
+		document.getElementById('note-title').addEventListener('dblclick', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			// 防止文本被选中
+			window.getSelection().removeAllRanges();
 			if (this.currentNoteId) {
 				this.copyNoteToClipboard(this.currentNoteId);
 			}
@@ -251,6 +255,8 @@ class NoteManager {
 			noteItem.addEventListener('dblclick', (e) => {
 				if (!this.isMultiSelectMode && !e.target.classList.contains('delete-btn')) {
 					e.stopPropagation();
+					// 防止文本被选中
+					window.getSelection().removeAllRanges();
 					this.copyNoteToClipboard(note.id);
 				}
 			});
@@ -401,8 +407,8 @@ class NoteManager {
 		const note = this.notes.find(note => note.id === noteId);
 		if (!note) return;
 
-		// 构建要复制的内容，包含标题和内容
-		const noteContent = `${note.title}\n\n${note.content}`;
+		// 构建要复制的内容，如果内容为空则只复制空字符串
+		const noteContent = note.content ? `${note.title}\n\n${note.content}` : '';
 
 		// 使用Clipboard API复制内容
 		navigator.clipboard.writeText(noteContent)

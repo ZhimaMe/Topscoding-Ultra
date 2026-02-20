@@ -2,6 +2,7 @@
 <html>
 	<head>
 		<meta charset="utf-8">
+		<title>笔记暂存区 - Topscoding Ultra</title>
 		<style>
 			body {
 				margin: 0;
@@ -40,16 +41,23 @@
 				cursor: pointer;
 				transition: background-color 0.2s;
 			}
+			.note-item {
+				transition: all 0.3s ease;
+			}
 			.note-item:hover {
 				background-color: #f5f5f5;
+				transform: translateY(-1px);
+				box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 			}
 			.note-item.active {
 				background-color: #e3f2fd;
 				border-color: #2196f3;
+				transition: all 0.3s ease;
 			}
 			.note-item.selected {
 				background-color: #e8f5e8;
 				border-color: #4caf50;
+				transition: all 0.3s ease;
 			}
 			.note-item.selected:hover {
 				background-color: #d4edda;
@@ -85,9 +93,12 @@
 				border-radius: 8px;
 				cursor: pointer;
 				font-size: 14px;
+				transition: all 0.3s ease;
 			}
 			.add-note-btn:hover {
 				background-color: #45a049;
+				transform: translateY(-1px);
+				box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 			}
 			.multi-select-btn {
 				padding: 6px 12px;
@@ -97,9 +108,12 @@
 				border-radius: 20px;
 				cursor: pointer;
 				font-size: 14px;
+				transition: all 0.3s ease;
 			}
 			.multi-select-btn:hover {
 				background-color: #0b7dda;
+				transform: translateY(-1px);
+				box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 			}
 			.main h1 {
 				margin-top: 0;
@@ -165,7 +179,7 @@
 					<div id="note-list"></div>
 				</div>
 			<div class="main" id="note-editor">
-					<input type="text" class="note-title-input" id="note-title" placeholder="新笔记1、新笔记2...">
+					<input type="text" class="note-title-input" id="note-title" placeholder="">
 					<textarea id="note" placeholder="在此输入笔记内容..."></textarea>
 				</div>
 				<div class="main empty-state" id="empty-state" style="display: none;">
