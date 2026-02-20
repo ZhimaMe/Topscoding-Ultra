@@ -250,9 +250,17 @@ class NoteManager {
 				}
 			});
 			
+			// 防止长按选中文本
+			noteItem.addEventListener('mousedown', (e) => {
+				if (!e.target.classList.contains('delete-btn')) {
+					e.preventDefault();
+				}
+			});
+
 			// 绑定双击整个笔记选项卡复制笔记内容到剪贴板的事件
 			noteItem.addEventListener('dblclick', (e) => {
 				if (!this.isMultiSelectMode && !e.target.classList.contains('delete-btn')) {
+					e.preventDefault();
 					e.stopPropagation();
 					// 防止文本被选中
 					window.getSelection().removeAllRanges();
@@ -433,56 +441,87 @@ class NoteManager {
 			});
 	}
 
+	// 获取或创建消息容器
+	_getToastContainer() {
+		let container = document.getElementById('toast-container');
+		if (!container) {
+			container = document.createElement('div');
+			container.id = 'toast-container';
+			container.style.position = 'fixed';
+			container.style.top = '20px';
+			container.style.right = '20px';
+			container.style.zIndex = '1000';
+			container.style.display = 'flex';
+			container.style.flexDirection = 'column';
+			container.style.alignItems = 'flex-end';
+			container.style.gap = '10px';
+			document.body.appendChild(container);
+		}
+		return container;
+	}
+
 	showCopySuccess(noteTitle) {
+		// 获取消息容器
+		const container = this._getToastContainer();
+
 		// 创建提示元素
 		const toast = document.createElement('div');
-		toast.style.position = 'fixed';
-		toast.style.top = '20px';
-		toast.style.right = '20px';
 		toast.style.padding = '12px 20px';
 		toast.style.backgroundColor = '#4CAF50';
 		toast.style.color = 'white';
 		toast.style.borderRadius = '4px';
 		toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-		toast.style.zIndex = '1000';
-		toast.style.transition = 'opacity 0.3s ease';
+		toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+		toast.style.transform = 'translateX(0)';
+		toast.style.minWidth = '200px';
 		toast.textContent = `笔记 "${noteTitle}" 已复制到剪贴板`;
 
-		// 添加到页面
-		document.body.appendChild(toast);
+		// 添加到容器
+		container.appendChild(toast);
 
 		// 3秒后移除
 		setTimeout(() => {
 			toast.style.opacity = '0';
+			toast.style.transform = 'translateX(100%)';
 			setTimeout(() => {
-				document.body.removeChild(toast);
+				container.removeChild(toast);
+				// 如果容器为空，移除容器
+				if (container.children.length === 0) {
+					document.body.removeChild(container);
+				}
 			}, 300);
 		}, 3000);
 	}
 
 	showCopyFailure() {
+		// 获取消息容器
+		const container = this._getToastContainer();
+
 		// 创建提示元素
 		const toast = document.createElement('div');
-		toast.style.position = 'fixed';
-		toast.style.top = '20px';
-		toast.style.right = '20px';
 		toast.style.padding = '12px 20px';
 		toast.style.backgroundColor = '#f44336';
 		toast.style.color = 'white';
 		toast.style.borderRadius = '4px';
 		toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-		toast.style.zIndex = '1000';
-		toast.style.transition = 'opacity 0.3s ease';
+		toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+		toast.style.transform = 'translateX(0)';
+		toast.style.minWidth = '200px';
 		toast.textContent = '复制失败：笔记内容为空';
 
-		// 添加到页面
-		document.body.appendChild(toast);
+		// 添加到容器
+		container.appendChild(toast);
 
 		// 3秒后移除
 		setTimeout(() => {
 			toast.style.opacity = '0';
+			toast.style.transform = 'translateX(100%)';
 			setTimeout(() => {
-				document.body.removeChild(toast);
+				container.removeChild(toast);
+				// 如果容器为空，移除容器
+				if (container.children.length === 0) {
+					document.body.removeChild(container);
+				}
 			}, 300);
 		}, 3000);
 	}
