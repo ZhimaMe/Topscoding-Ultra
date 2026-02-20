@@ -79,15 +79,8 @@ class NoteManager {
 			this.toggleMultiSelectMode();
 		});
 
-		// 批量删除按钮
-		document.getElementById('batch-delete-btn').addEventListener('click', () => {
-			this.batchDeleteNotes();
-		});
-
-		// 取消多选按钮
-		document.getElementById('cancel-select-btn').addEventListener('click', () => {
-			this.exitMultiSelectMode();
-		});
+		// 批量删除按钮和取消多选按钮的事件绑定会在进入多选模式时动态添加
+		// 这里不再初始绑定，因为这些元素在初始页面加载时不存在
 
 		// 标题输入事件
 		document.getElementById('note-title').addEventListener('input', () => {
